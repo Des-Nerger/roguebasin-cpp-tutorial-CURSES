@@ -8,7 +8,7 @@ ifneq (,$(findstring debug,$(MAKECMDGOALS)))
 else
 	CFLAGS=-O2 -s
 endif
-LIBFLAGS=-lcurses
+LIBFLAGS=-lncursesw
 
 debug : tuto
 release : tuto
