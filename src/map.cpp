@@ -59,6 +59,15 @@ bool Map::isWall(int x, int y) const {
    return !this->map->isWalkable(x, y);
 }
 
+bool Map::canWalk(int x, int y) const {
+   if (this->isWall(x, y)) return false;
+   for (auto actor : ::engine.actors)
+      if (x == actor->x && y == actor->y)
+         // there is an actor here. canot walk
+         return false;
+   return true;
+}
+
 bool Map::isExplored(int x, int y) const {
    return this->tiles[x + y * this->width].explored;
 }
@@ -94,13 +103,15 @@ void Map::createRoom(bool first, int x1, int y1, int x2, int y2) {
       ::engine.player->y = (y1 + y2) / 2;
    } else {
       auto rng = TCODRandom::getInstance();
-      if (0 == rng->getInt(0, 3))
-         ::engine.actors.push_back(
-            new Actor(
-               (x1 + x2) / 2,
-               (y1 + y2) / 2,
-               '@',
-               COLOR_YELLOW));
+      for (auto nbMonsters = rng->getInt(0, MAX_ROOM_MONSTERS);
+           nbMonsters > 0;
+           nbMonsters -= 1)
+      {
+         auto x = rng->getInt(x1, x2);
+         auto y = rng->getInt(y1, y2);
+         if (this->canWalk(x, y))
+            this->addMonster(x, y);
+      }
    }
 }
 
@@ -120,4 +131,27 @@ void Map::render() const {
          mvaddch(y, x, this->isWall(x, y)? '#' : '.');
          if (dimmed) attroff(A_DIM);
       }
+}
+
+void Map::addMonster(int x, int y) {
+   auto rng = TCODRandom::getInstance();
+   if (rng->getInt(0, 100) < 80)
+      // create an orc
+      engine.actors.push_back
+         (new Actor(
+            x,
+            y,
+            'o',
+            "orc",
+            COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK)) ) );
+   else
+      // create a troll
+      engine.actors.push_back
+         (new Actor(
+            x,
+            y,
+            'T',
+            "troll",
+            COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK))
+               | A_DIM ) );
 }

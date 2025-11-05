@@ -6,7 +6,7 @@
 #include <main.hpp>
 #include <map.hpp>
 
-Engine::Engine() : fovRadius(10), computeFovAtUpdate(false) {
+Engine::Engine() : gameStatus(Engine::IDLE), fovRadius(10) {
    assert(NULL != setlocale(LC_CTYPE, ""));
    assert(initscr() == stdscr);
    ok(start_color());
@@ -16,7 +16,12 @@ Engine::Engine() : fovRadius(10), computeFovAtUpdate(false) {
    ok(keypad(stdscr, true));
    assert(1 == curs_set(0));
 
-   this->player = new Actor(COLS / 2, LINES / 2, '@', COLOR_WHITE);
+   this->player = new Actor(
+      COLS / 2,
+      LINES / 2,
+      '@',
+      "player",
+      COLOR_PAIR(alloc_pair(COLOR_WHITE, COLOR_BLACK)) );
    this->actors.push_back(this->player);
    this->map = new Map(COLS, LINES);
    this->map->computeFov();
@@ -34,38 +39,34 @@ Engine::~Engine() {
 }
 
 bool Engine::update() {
+   this->gameStatus = Engine::IDLE;
+   int dx = 0, dy = 0;
    auto ch = getch();
    switch (ch) {
    case 'q': return false;
    case KEY_UP:
-      if (!this->map->isWall(this->player->x, this->player->y - 1)) {
-         this->player->y -= 1;
-         this->computeFovAtUpdate = true;
-      }
+      dy -= 1;
       break;
    case KEY_DOWN:
-      if (!this->map->isWall(this->player->x, this->player->y + 1)) {
-         this->player->y += 1;
-         this->computeFovAtUpdate = true;
-      }
+      dy += 1;
       break;
    case KEY_LEFT:
-      if (!this->map->isWall(this->player->x - 1, this->player->y)) {
-         this->player->x -= 1;
-         this->computeFovAtUpdate = true;
-      }
+      dx -= 1;
       break;
    case KEY_RIGHT:
-      if (!this->map->isWall(this->player->x + 1, this->player->y)) {
-         this->player->x += 1;
-         this->computeFovAtUpdate = true;
-      }
+      dx += 1;
       break;
    }
-   if (this->computeFovAtUpdate) {
-      this->map->computeFov();
-      this->computeFovAtUpdate = false;
+   if (dx != 0 || dy != 0) {
+      this->gameStatus = Engine::NEW_TURN;
+      if (this->player->moveOrAttack(
+          this->player->x + dx,
+          this->player->y + dy)) this->map->computeFov();
    }
+   if (this->gameStatus == Engine::NEW_TURN)
+      for (auto actor : this->actors)
+         if (actor != this->player)
+            actor->update();
    return true;
 }
 
@@ -73,7 +74,15 @@ void Engine::render() {
    ok(erase());
    // draw the map
    this->map->render();
-   for (auto actor : actors)
+   for (auto actor : this->actors)
       if (map->isInFov(actor->x, actor->y))
          actor->render();
+   if (NULL != this->currentMessage.fmt) {
+      mvprintw(
+         0,
+         0,
+         this->currentMessage.fmt,
+         this->currentMessage.name);
+      this->currentMessage.fmt = NULL;
+   }
 }
