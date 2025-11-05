@@ -2,7 +2,6 @@
 
 #include <Actor.hpp>
 #include <map.hpp>
-#include <main.hpp>
 #include <vector>
 
 struct Engine {
@@ -15,5 +14,3 @@ struct Engine {
    bool update();
    void render(); 
 };
-
-extern Engine engine;

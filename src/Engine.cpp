@@ -1,7 +1,9 @@
 #include <Actor.hpp>
 #include <Engine.hpp>
+#include <assert.h>
 #include <curses.h>
 #include <locale.h>
+#include <main.hpp>
 #include <map.hpp>
 
 Engine::Engine() {
@@ -14,8 +16,6 @@ Engine::Engine() {
    ok(keypad(stdscr, true));
    assert(1 == curs_set(0));
 
-   this->actors.push_back(
-      new Actor(3 * COLS / 4, LINES / 4, '@', COLOR_YELLOW) );
    this->player = new Actor(COLS / 2, LINES / 2, '@', COLOR_WHITE);
    this->actors.push_back(this->player);
    this->map = new Map(COLS, LINES);

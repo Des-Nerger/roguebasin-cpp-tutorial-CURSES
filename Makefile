@@ -8,7 +8,8 @@ ifneq (,$(findstring debug,$(MAKECMDGOALS)))
 else
 	CFLAGS=-O2 -s
 endif
-LIBFLAGS=-lncursesw
+CFLAGS+=`pkg-config libtcod --cflags`
+LIBFLAGS=-lncursesw -ltcod
 
 debug : tuto
 release : tuto
