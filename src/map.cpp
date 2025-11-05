@@ -37,6 +37,7 @@ struct BspListener : ITCODBspCallback {
 
 Map::Map(int width, int height) : width(width), height(height) {
    this->tiles = new Tile[width * height];
+   this->map = new TCODMap(width, height);
    TCODBsp bsp(0, 0, width, height);
    bsp.splitRecursive(
       NULL,
@@ -51,10 +52,30 @@ Map::Map(int width, int height) : width(width), height(height) {
 
 Map::~Map() {
    delete[] this->tiles;
+   delete this->map;
 }
 
 bool Map::isWall(int x, int y) const {
-   return !this->tiles[x + y * this->width].canWalk;
+   return !this->map->isWalkable(x, y);
+}
+
+bool Map::isExplored(int x, int y) const {
+   return this->tiles[x + y * this->width].explored;
+}
+
+bool Map::isInFov(int x, int y) const {
+   if (this->map->isInFov(x, y)) {
+      this->tiles[x + y * width].explored = true;
+      return true;
+   }
+   return false;
+}
+
+void Map::computeFov() {
+   this->map->computeFov(
+      ::engine.player->x,
+      ::engine.player->y,
+      ::engine.fovRadius);
 }
 
 void Map::dig(int x1, int y1, int x2, int y2) {
@@ -62,7 +83,7 @@ void Map::dig(int x1, int y1, int x2, int y2) {
    if (y2 < y1) std::swap(y1, y2);
    for (auto x = x1; x <= x2; x++)
       for (auto y = y1; y <= y2; y++)
-         this->tiles[x + y * this->width].canWalk = true;
+         this->map->setProperties(x, y, true, true);
 }
 
 void Map::createRoom(bool first, int x1, int y1, int x2, int y2) {
@@ -84,11 +105,19 @@ void Map::createRoom(bool first, int x1, int y1, int x2, int y2) {
 }
 
 void Map::setWall(int x, int y) {
-   this->tiles[x + y * this->width].canWalk = false;
+   this->map->setProperties(x, y, false, false);
 }
 
 void Map::render() const {
    for (auto x = 0; x < this->width; x += 1)
-      for (auto y = 0; y < this->height; y += 1)
+      for (auto y = 0; y < this->height; y += 1) {
+         auto dimmed = false;
+         if (this->isInFov(x, y)) {
+         } else if (this->isExplored(x, y)) {
+            attron(A_DIM);
+            dimmed = true;
+         } else continue;
          mvaddch(y, x, this->isWall(x, y)? '#' : '.');
+         if (dimmed) attroff(A_DIM);
+      }
 }

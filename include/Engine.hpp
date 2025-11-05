@@ -8,6 +8,8 @@ struct Engine {
    std::vector<Actor *> actors;
    Actor *player;
    Map *map;
+   int fovRadius;
+   bool computeFovAtUpdate;
 
    Engine();
    ~Engine();
