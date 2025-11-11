@@ -62,8 +62,8 @@ bool Map::isWall(int x, int y) const {
 bool Map::canWalk(int x, int y) const {
    if (this->isWall(x, y)) return false;
    for (auto actor : ::engine.actors)
-      if (x == actor->x && y == actor->y)
-         // there is an actor here. canot walk
+      if (actor->blocks && x == actor->x && y == actor->y)
+         // there is a blocking actor here. cannot walk
          return false;
    return true;
 }
@@ -135,23 +135,31 @@ void Map::render() const {
 
 void Map::addMonster(int x, int y) {
    auto rng = TCODRandom::getInstance();
-   if (rng->getInt(0, 100) < 80)
+   if (rng->getInt(0, 100) < 80) {
       // create an orc
-      engine.actors.push_back
-         (new Actor(
-            x,
-            y,
-            'o',
-            "orc",
-            COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK)) ) );
-   else
+      auto orc = new Actor(
+         x,
+         y,
+         'o',
+         "orc",
+         COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK)) );
+      orc->destructible = new MonsterDestructible(10, 0, "dead orc");
+      orc->attacker = new Attacker(3);
+      orc->ai = new MonsterAi();
+      ::engine.actors.push_back(orc);
+   } else {
       // create a troll
-      engine.actors.push_back
-         (new Actor(
-            x,
-            y,
-            'T',
-            "troll",
-            COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK))
-               | A_DIM ) );
+      auto troll = new Actor(
+         x,
+         y,
+         'T',
+         "troll",
+         COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK))
+               | A_DIM );
+      troll->destructible = new MonsterDestructible
+         (16, 1, "troll carcass");
+      troll->attacker = new Attacker(4);
+      troll->ai = new MonsterAi();
+      ::engine.actors.push_back(troll);
+   }
 }

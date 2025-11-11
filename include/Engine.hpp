@@ -15,13 +15,18 @@ struct Engine {
       DEFEAT // the player was killed
    } gameStatus;
    int fovRadius;
-   struct {
-      const char *fmt;
-      const char *name;
-   } currentMessage;
+   struct Msg {
+      const char *fmt; // format string
+      const char *ownName;
+      const char *targName;
+      float floatArg;
+   };
+   std::vector<Engine::Msg> msg; // current messages
+   int lastKey;
 
    Engine();
    ~Engine();
    bool update();
    void render(); 
+   void sendNonBlockingToBack(Actor *actor);
 };

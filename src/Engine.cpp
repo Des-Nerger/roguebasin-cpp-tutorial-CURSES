@@ -22,51 +22,36 @@ Engine::Engine() : gameStatus(Engine::IDLE), fovRadius(10) {
       '@',
       "player",
       COLOR_PAIR(alloc_pair(COLOR_WHITE, COLOR_BLACK)) );
+   this->player->destructible = new PlayerDestructible(
+      30,
+      2,
+      "your cadaver");
+   this->player->attacker = new Attacker(5);
+   this->player->ai = new PlayerAi();
+   
    this->actors.push_back(this->player);
    this->map = new Map(COLS, LINES);
    this->map->computeFov();
+   this->msg.reserve(LINES);
 }
 
 Engine::~Engine() {
+   ok(flushinp());
+   ok(endwin());
    while (!this->actors.empty()) {
       delete this->actors.back();
       this->actors.pop_back();
    }
    delete this->map;
-
-   ok(flushinp());
-   ok(endwin());
 }
 
 bool Engine::update() {
    this->gameStatus = Engine::IDLE;
-   int dx = 0, dy = 0;
-   auto ch = getch();
-   switch (ch) {
-   case 'q': return false;
-   case KEY_UP:
-      dy -= 1;
-      break;
-   case KEY_DOWN:
-      dy += 1;
-      break;
-   case KEY_LEFT:
-      dx -= 1;
-      break;
-   case KEY_RIGHT:
-      dx += 1;
-      break;
-   }
-   if (dx != 0 || dy != 0) {
-      this->gameStatus = Engine::NEW_TURN;
-      if (this->player->moveOrAttack(
-          this->player->x + dx,
-          this->player->y + dy)) this->map->computeFov();
-   }
+   if (!this->player->update()) return false;
    if (this->gameStatus == Engine::NEW_TURN)
       for (auto actor : this->actors)
          if (actor != this->player)
-            actor->update();
+            (void) actor->update();
    return true;
 }
 
@@ -77,12 +62,32 @@ void Engine::render() {
    for (auto actor : this->actors)
       if (map->isInFov(actor->x, actor->y))
          actor->render();
-   if (NULL != this->currentMessage.fmt) {
+   for (auto y = this->msg.size() - 1; !this->msg.empty(); y--) {
+      auto &msg = this->msg.back();
+      this->msg.pop_back();
       mvprintw(
+         y,
          0,
-         0,
-         this->currentMessage.fmt,
-         this->currentMessage.name);
-      this->currentMessage.fmt = NULL;
+         msg.fmt,
+         msg.ownName,
+         msg.targName,
+         msg.floatArg);
    }
+   mvprintw(
+      LINES - 1,
+      0,
+      "HP : %d/%d",
+      (int) this->player->destructible->hp,
+      (int) this->player->destructible->maxHp);
+}
+
+void Engine::sendNonBlockingToBack(Actor *actor) {
+   assert(!actor->blocks);
+   unsigned i = 0, j = this->actors.size() - 1;
+   for (; i < this->actors.size(); i++)
+      if (this->actors[i]->blocks) break;
+   for (; j >= 0; j--)
+      if (actor == this->actors[j]) break;
+   if (i >= j) return;
+   std::swap(this->actors[i], this->actors[j]);
 }
