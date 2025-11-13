@@ -13,6 +13,11 @@ bool PlayerAi::update(Actor *owner) {
    auto ch = getch();
    switch (ch) {
    case 'q': return false;
+   case KEY_MOUSE:
+      MEVENT event;
+      ok(getmouse(&event));
+      ::engine.mouse = { .cx = event.x, .cy = event.y };
+      break;
    case KEY_UP:
       dy -= 1;
       break;
@@ -55,12 +60,10 @@ bool PlayerAi::moveOrAttack(Actor *owner, int targetx, int targety) {
           actor->destructible->isDead() &&
           actor->x == targetx &&
           actor->y == targety)
-      {
-         ::engine.msg.push_back({
+         ::engine.gui->msg.push_back({
+            .col = A_DIM,
             .fmt = "There's a %s here",
-            .ownName = actor->name
-         });
-      }
+            .ownName = actor->name});
 
    owner->x = targetx;
    owner->y = targety;

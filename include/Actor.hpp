@@ -9,7 +9,7 @@ struct Actor;
 struct Actor {
    int x, y; // position on map
    int ch; // ascii code
-   int col; // color pair attr
+   unsigned col; // color pair attr
    const char *name; // the actor's name
    bool blocks; // can we walk on this actor?
    Attacker *attacker; // something that deals damage

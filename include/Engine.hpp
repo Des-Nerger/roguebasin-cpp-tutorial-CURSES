@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Actor.hpp>
+#include <Gui.hpp>
 #include <map.hpp>
 #include <vector>
 
@@ -15,14 +16,11 @@ struct Engine {
       DEFEAT // the player was killed
    } gameStatus;
    int fovRadius;
-   struct Msg {
-      const char *fmt; // format string
-      const char *ownName;
-      const char *targName;
-      float floatArg;
-   };
-   std::vector<Engine::Msg> msg; // current messages
    int lastKey;
+   Gui *gui;
+   struct {
+      int cx = INT_MIN, cy = INT_MIN;
+   } mouse;
 
    Engine();
    ~Engine();

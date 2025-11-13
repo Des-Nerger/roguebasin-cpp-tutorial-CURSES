@@ -73,6 +73,10 @@ bool Map::isExplored(int x, int y) const {
 }
 
 bool Map::isInFov(int x, int y) const {
+   if (x < 0 ||
+       x >= this->map->getWidth() ||
+       y < 0 ||
+       y >= this->map->getHeight()) return false;
    if (this->map->isInFov(x, y)) {
       this->tiles[x + y * width].explored = true;
       return true;
@@ -142,7 +146,7 @@ void Map::addMonster(int x, int y) {
          y,
          'o',
          "orc",
-         COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK)) );
+         COLOR_PAIR(alloc_pair(COLOR_CYAN, COLOR_BLACK)) );
       orc->destructible = new MonsterDestructible(10, 0, "dead orc");
       orc->attacker = new Attacker(3);
       orc->ai = new MonsterAi();
@@ -154,8 +158,7 @@ void Map::addMonster(int x, int y) {
          y,
          'T',
          "troll",
-         COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK))
-               | A_DIM );
+         COLOR_PAIR(alloc_pair(COLOR_GREEN, COLOR_BLACK)));
       troll->destructible = new MonsterDestructible
          (16, 1, "troll carcass");
       troll->attacker = new Attacker(4);

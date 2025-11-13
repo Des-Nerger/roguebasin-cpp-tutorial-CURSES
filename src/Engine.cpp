@@ -16,6 +16,15 @@ Engine::Engine() : gameStatus(Engine::IDLE), fovRadius(10) {
    ok(keypad(stdscr, true));
    assert(1 == curs_set(0));
 
+   assert(0 != mousemask(
+      BUTTON1_PRESSED |
+         BUTTON2_PRESSED |
+         BUTTON3_PRESSED |
+         BUTTON4_PRESSED |
+         BUTTON5_PRESSED,
+      NULL));
+   assert(true == has_mouse());
+
    this->player = new Actor(
       COLS / 2,
       LINES / 2,
@@ -32,7 +41,16 @@ Engine::Engine() : gameStatus(Engine::IDLE), fovRadius(10) {
    this->actors.push_back(this->player);
    this->map = new Map(COLS, LINES);
    this->map->computeFov();
-   this->msg.reserve(LINES);
+   this->gui = new Gui(
+      COLOR_PAIR(alloc_pair(COLOR_WHITE, COLOR_RED)));
+   auto col = COLOR_PAIR(alloc_pair(COLOR_RED, COLOR_BLACK));
+   this->gui->msg.push_back(Gui::Msg{
+      .col = col,
+      .fmt = "Welcome stranger!" } );
+   this->gui->msg.push_back(Gui::Msg{
+      .col = col,
+      .fmt =
+         "Prepare to perish in the Tombs of the Ancient Kings." } );
 }
 
 Engine::~Engine() {
@@ -42,6 +60,7 @@ Engine::~Engine() {
       delete this->actors.back();
       this->actors.pop_back();
    }
+   delete this->gui;
    delete this->map;
 }
 
@@ -62,23 +81,8 @@ void Engine::render() {
    for (auto actor : this->actors)
       if (map->isInFov(actor->x, actor->y))
          actor->render();
-   for (auto y = this->msg.size() - 1; !this->msg.empty(); y--) {
-      auto &msg = this->msg.back();
-      this->msg.pop_back();
-      mvprintw(
-         y,
-         0,
-         msg.fmt,
-         msg.ownName,
-         msg.targName,
-         msg.floatArg);
-   }
-   mvprintw(
-      LINES - 1,
-      0,
-      "HP : %d/%d",
-      (int) this->player->destructible->hp,
-      (int) this->player->destructible->maxHp);
+   // show the log messages and player's stats
+   this->gui->render();
 }
 
 void Engine::sendNonBlockingToBack(Actor *actor) {

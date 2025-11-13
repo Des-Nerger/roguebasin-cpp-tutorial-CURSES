@@ -40,7 +40,8 @@ MonsterDestructible::MonsterDestructible(
 void MonsterDestructible::die(Actor *owner) {
    // tranform it into a nasty corpse! it doesn't block, can't be
    // attacked and doesn't move
-   ::engine.msg.push_back({
+   ::engine.gui->msg.push_back({
+      .col = A_DIM,
       .fmt = "%s is dead",
       .ownName = owner->name});
    Destructible::die(owner);
@@ -52,7 +53,8 @@ PlayerDestructible::PlayerDestructible(
    const char *corpseName) : Destructible(maxHp, defense, corpseName) {}
 
 void PlayerDestructible::die(Actor *owner) {
-   ::engine.msg.push_back({
+   ::engine.gui->msg.push_back({
+      .col = COLOR_PAIR(alloc_pair(COLOR_RED, COLOR_BLACK)),
       .fmt = "You died!"});
    Destructible::die(owner);
    ::engine.gameStatus = Engine::DEFEAT;
