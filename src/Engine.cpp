@@ -5,6 +5,7 @@
 #include <locale.h>
 #include <main.hpp>
 #include <map.hpp>
+#include <stdlib.h>
 
 Engine::Engine() : gameStatus(Engine::IDLE), fovRadius(10) {
    assert(NULL != setlocale(LC_CTYPE, ""));
@@ -37,6 +38,7 @@ Engine::Engine() : gameStatus(Engine::IDLE), fovRadius(10) {
       "your cadaver");
    this->player->attacker = new Attacker(5);
    this->player->ai = new PlayerAi();
+   this->player->container = new Container(26);
    
    this->actors.push_back(this->player);
    this->map = new Map(COLS, LINES);
@@ -57,7 +59,8 @@ Engine::~Engine() {
    ok(flushinp());
    ok(endwin());
    while (!this->actors.empty()) {
-      delete this->actors.back();
+      auto actor = this->actors.back();
+      delete actor;
       this->actors.pop_back();
    }
    delete this->gui;
@@ -94,4 +97,38 @@ void Engine::sendNonBlockingToBack(Actor *actor) {
       if (actor == this->actors[j]) break;
    if (i >= j) return;
    std::swap(this->actors[i], this->actors[j]);
+   this->assertBlockingOrder(__func__);
+}
+
+void Engine::removeNonBlocking(Actor *actor) {
+   assert(!actor->blocks);
+   unsigned k = UINT_MAX;
+   unsigned i = 0;
+   for (; i < this->actors.size(); i += 1) {
+      if (this->actors[i]->blocks) break;
+      else if (actor == this->actors[i]) k = i;
+   }
+   if (k != this->actors.size() - 1) {
+      assert(i > 0);
+      i -= 1;
+      if (i != k)
+         std::swap(this->actors[i], this->actors[k]);
+      std::swap(this->actors[i], this->actors.back());
+   }
+   this->actors.pop_back();
+   this->assertBlockingOrder(__func__);
+}
+
+void Engine::assertBlockingOrder(const char *fnName) {
+   auto blocks = false;
+   for (auto actor : this->actors) {
+      if (!(!blocks || actor->blocks)) {
+         mvprintw
+            (LINES - 2, COLS / 2, "assert failed at %s\n", fnName);
+         ok(refresh());
+         (void) getch();
+         exit(EXIT_FAILURE);
+      }
+      blocks = actor->blocks;
+   }
 }

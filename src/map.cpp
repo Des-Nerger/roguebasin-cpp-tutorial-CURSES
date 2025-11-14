@@ -116,6 +116,14 @@ void Map::createRoom(bool first, int x1, int y1, int x2, int y2) {
          if (this->canWalk(x, y))
             this->addMonster(x, y);
       }
+      for (auto nbItems = rng->getInt(0, MAX_ROOM_ITEMS);
+           nbItems > 0;
+           nbItems--)
+      {
+         auto x = rng->getInt(x1, x2);
+         auto y = rng->getInt(y1, y2);
+         if (this->canWalk(x, y)) this->addItem(x, y);
+      }
    }
 }
 
@@ -165,4 +173,18 @@ void Map::addMonster(int x, int y) {
       troll->ai = new MonsterAi();
       ::engine.actors.push_back(troll);
    }
+}
+
+void Map::addItem(int x, int y) {
+   auto healthPotion = new Actor(
+      x,
+      y,
+      '!',
+      "health potion",
+      A_BOLD |
+         COLOR_PAIR(alloc_pair(COLOR_MAGENTA, COLOR_BLACK)) );
+   healthPotion->blocks = false;
+   healthPotion->pickable = new Healer(4);
+   ::engine.actors.push_back(healthPotion);
+   ::engine.sendNonBlockingToBack(healthPotion);
 }

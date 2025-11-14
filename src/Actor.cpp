@@ -12,9 +12,19 @@ Actor::Actor(int x, int y, int ch, const char *name, int col) :
    blocks(true),
    attacker(NULL),
    destructible(NULL),
-   ai(NULL)
+   ai(NULL),
+   pickable(NULL),
+   container(NULL)
 {
    this->col = col;
+}
+
+Actor::~Actor() {
+   if (this->attacker) delete this->attacker;
+   if (this->destructible) delete this->destructible;
+   if (this->ai) delete this->ai;
+   if (this->pickable) delete this->pickable;
+   if (this->container) delete this->container;
 }
 
 bool Actor::update() {

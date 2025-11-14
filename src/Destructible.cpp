@@ -37,6 +37,16 @@ MonsterDestructible::MonsterDestructible(
    const char *corpseName) : Destructible(maxHp, defense, corpseName)
 {}
 
+float Destructible::heal(float amount) {
+   this->hp += amount;
+   auto overAmount = this->hp - this->maxHp;
+   if (overAmount > 0) {
+      amount -= overAmount;
+      this->hp = this->maxHp;
+   }
+   return amount;
+}
+
 void MonsterDestructible::die(Actor *owner) {
    // tranform it into a nasty corpse! it doesn't block, can't be
    // attacked and doesn't move

@@ -8,9 +8,19 @@
 
 Gui::Gui(unsigned barCol) : barCol(barCol) {
    this->msg.reserve(LINES - 1);
+   this->inventoryWin = newwin(
+      15,
+      COLS / 2,
+      LINES / 2 - 15 / 2,
+      COLS / 2);
+   assert(NULL != this->inventoryWin);
+   wbkgdset(
+      this->inventoryWin,
+      ' ' | A_DIM | COLOR_PAIR(alloc_pair(COLOR_WHITE, COLOR_WHITE)));
 }
 
 Gui::~Gui() {
+   ok(delwin(this->inventoryWin));
 }
 
 void Gui::render() {

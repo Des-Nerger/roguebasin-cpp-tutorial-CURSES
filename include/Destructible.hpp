@@ -9,7 +9,9 @@ struct Destructible {
    Destructible(float maxHp, float defense, const char *corpseName);
    inline bool isDead() { return this->hp <= 0.0; }
    float takeDamage(Actor *owner, float damage);
+   float heal(float amount);
    virtual void die(Actor *owner);
+   virtual ~Destructible() {}
 };
 
 struct MonsterDestructible : Destructible {

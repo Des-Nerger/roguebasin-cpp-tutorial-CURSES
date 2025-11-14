@@ -1,5 +1,8 @@
 #pragma once
 
+#include <curses.h>
+#undef hline
+#undef vline
 #include <limits.h>
 #include <math.h>
 #include <vector>
@@ -25,4 +28,5 @@ struct Gui {
    };
    std::vector<Gui::Msg> msg; // current messages
    unsigned barCol = UINT_MAX; // color pair attr
+   WINDOW *inventoryWin = NULL;
 };

@@ -25,9 +25,11 @@ struct Map {
    void createRoom(bool first, int x1, int y1, int x2, int y2);
    void setWall(int x, int y);
    void addMonster(int x, int y);
+   void addItem(int x, int y);
 };
 
 enum : int {
+   MAX_ROOM_ITEMS = 2,
    MAX_ROOM_MONSTERS = 3,
    ROOM_MIN_SIZE = 6,
    ROOM_MAX_SIZE = 12,

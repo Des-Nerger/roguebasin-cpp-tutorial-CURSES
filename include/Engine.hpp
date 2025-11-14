@@ -27,4 +27,6 @@ struct Engine {
    bool update();
    void render(); 
    void sendNonBlockingToBack(Actor *actor);
+   void removeNonBlocking(Actor *actor);
+   void assertBlockingOrder(const char *fnName);
 };
