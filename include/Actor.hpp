@@ -24,4 +24,5 @@ struct Actor {
    ~Actor();
    bool update();
    void render() const;
+   long long squaredDistance(int cx, int cy) const;
 };

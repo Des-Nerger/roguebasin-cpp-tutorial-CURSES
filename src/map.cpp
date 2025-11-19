@@ -1,3 +1,4 @@
+#include <Actor.hpp>
 #include <curses.h>
 #undef hline
 #undef vline
@@ -134,14 +135,17 @@ void Map::setWall(int x, int y) {
 void Map::render() const {
    for (auto x = 0; x < this->width; x += 1)
       for (auto y = 0; y < this->height; y += 1) {
-         auto dimmed = false;
+         unsigned attr = 0;
          if (this->isInFov(x, y)) {
-         } else if (this->isExplored(x, y)) {
-            attron(A_DIM);
-            dimmed = true;
-         } else continue;
+            if (::engine.player->squaredDistance(x, y) <=
+                   ::engine.pick.maxSqRange
+            ) attr |= ::engine.pick.col;
+         } else if (this->isExplored(x, y))
+            attr |= A_DIM;
+         else continue;
+         if (0 != attr) attron(attr);
          mvaddch(y, x, this->isWall(x, y)? '#' : '.');
-         if (dimmed) attroff(A_DIM);
+         if (0 != attr) attroff(attr);
       }
 }
 
@@ -176,15 +180,59 @@ void Map::addMonster(int x, int y) {
 }
 
 void Map::addItem(int x, int y) {
-   auto healthPotion = new Actor(
-      x,
-      y,
-      '!',
-      "health potion",
-      A_BOLD |
-         COLOR_PAIR(alloc_pair(COLOR_MAGENTA, COLOR_BLACK)) );
-   healthPotion->blocks = false;
-   healthPotion->pickable = new Healer(4);
-   ::engine.actors.push_back(healthPotion);
-   ::engine.sendNonBlockingToBack(healthPotion);
+   auto rng = TCODRandom::getInstance();
+   auto dice = rng->getInt(0, 100);
+   if (dice < 70) {
+      // create a health potion
+      auto healthPotion = new Actor(
+         x,
+         y,
+         '!',
+         "health potion",
+         A_BOLD |
+            COLOR_PAIR(alloc_pair(COLOR_MAGENTA, COLOR_BLACK)) );
+      healthPotion->blocks = false;
+      healthPotion->pickable = new Healer(4);
+      ::engine.actors.push_back(healthPotion);
+      ::engine.sendNonBlockingToBack(healthPotion);
+   } else if (dice < 70 + 10) {
+      // create a scroll of lightning bolt
+      auto lightnBoltScroll = new Actor(
+         x,
+         y,
+         '#',
+         "scroll of lightning bolt",
+         A_BOLD |
+            COLOR_PAIR(alloc_pair(COLOR_YELLOW, COLOR_BLACK)) );
+      lightnBoltScroll->blocks = false;
+      lightnBoltScroll->pickable = new LightningBolt(5, 20);
+      ::engine.actors.push_back(lightnBoltScroll);
+      ::engine.sendNonBlockingToBack(lightnBoltScroll);
+   } else if (dice < 70 + 10 + 10) {
+      // create a scroll of fireball
+      auto fireballScroll = new Actor(
+         x,
+         y,
+         '#',
+         "scroll of fireball",
+         A_BOLD |
+            COLOR_PAIR(alloc_pair(COLOR_YELLOW, COLOR_BLACK)) );
+      fireballScroll->blocks = false;
+      fireballScroll->pickable = new Fireball(3, 12);
+      ::engine.actors.push_back(fireballScroll);
+      ::engine.sendNonBlockingToBack(fireballScroll);
+   } else {
+      // create a scroll of confusion
+      auto confusScroll = new Actor(
+         x,
+         y,
+         '#',
+         "scroll of confusion",
+         A_BOLD |
+            COLOR_PAIR(alloc_pair(COLOR_YELLOW, COLOR_BLACK)) );
+      confusScroll->blocks = false;
+      confusScroll->pickable = new Confuser(10, 8);
+      ::engine.actors.push_back(confusScroll);
+      ::engine.sendNonBlockingToBack(confusScroll);
+   }
 }

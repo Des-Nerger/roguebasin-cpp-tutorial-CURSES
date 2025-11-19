@@ -29,7 +29,8 @@ Actor *PlayerAi::choseFromInventory(Actor *owner) {
    ok(wrefresh(::engine.gui->inventoryWin));
 
    // wait for a key press
-   unsigned actorIndex = getch() - 'a';
+   ::engine.lastKey = getch();
+   unsigned actorIndex = ::engine.lastKey - 'a';
    if (actorIndex >= 0 &&
        actorIndex < owner->container->inventory.size())
       return owner->container->inventory[actorIndex];
@@ -38,7 +39,6 @@ Actor *PlayerAi::choseFromInventory(Actor *owner) {
 
 bool PlayerAi::handleActionKey(Actor *owner, int ascii) {
    switch (ascii) {
-   case 'q': return false;
    case 'g':
       ::engine.gameStatus = Engine::NEW_TURN;
       for (auto actor : ::engine.actors)
@@ -69,7 +69,18 @@ bool PlayerAi::handleActionKey(Actor *owner, int ascii) {
          auto actor = this->choseFromInventory(owner);
          if (actor) {
             actor->pickable->use(actor, owner);
-            ::engine.gameStatus = Engine::NEW_TURN;
+            if (::engine.gameStatus != Engine::DEFEAT)
+               ::engine.gameStatus = Engine::NEW_TURN;
+         }
+      }
+      break;
+   case 'd': // drop item
+      {
+         auto actor = this->choseFromInventory(owner);
+         if (actor) {
+            actor->pickable->drop(actor, owner);
+            if (::engine.gameStatus != Engine::DEFEAT)
+               ::engine.gameStatus = Engine::NEW_TURN;
          }
       }
       break;
@@ -78,14 +89,16 @@ bool PlayerAi::handleActionKey(Actor *owner, int ascii) {
 }
 
 bool PlayerAi::update(Actor *owner) {
-   if (owner->destructible && owner->destructible->isDead())
-      return true; // should be `false` ?
    int dx = 0, dy = 0;
    auto ch = getch();
+   defer( ::engine.lastKey = ch );
+   if ('q' == ch || 'q' == ::engine.lastKey) return false;
+   if (owner->destructible && owner->destructible->isDead())
+      return true; // should be `false` ?
    switch (ch) {
    case KEY_MOUSE:
       MEVENT event;
-      ok(getmouse(&event));
+      if (OK != getmouse(&event)) return true;
       ::engine.mouse = { .cx = event.x, .cy = event.y };
       return true;
    case KEY_UP:
@@ -150,12 +163,12 @@ bool MonsterAi::update(Actor *owner) {
       this->moveCount = MonsterAi::TRACKING_TURNS;
    else this->moveCount -= 1;
    if (this->moveCount > 0)
-      (void) this->moveOrAttack
+      this->moveOrAttack
          (owner, ::engine.player->x, ::engine.player->y);
    return true;
 }
 
-bool MonsterAi::moveOrAttack(Actor *owner, int targetx, int targety) {
+void MonsterAi::moveOrAttack(Actor *owner, int targetx, int targety) {
    auto dx = targetx - owner->x;
    auto stepx = (dx > 0) ? 1 : -1;
    auto dy = targety - owner->y;
@@ -167,29 +180,55 @@ bool MonsterAi::moveOrAttack(Actor *owner, int targetx, int targety) {
       if (::engine.map->canWalk(owner->x + dx, owner->y + dy)) {
          owner->x += dx;
          owner->y += dy;
-         return true;
+         return;
       } else if (abs(dx) > abs(dy)) {
          if (::engine.map->canWalk(owner->x + stepx, owner->y)) {
             owner->x += stepx;
-            return true;
+            return;
          } else if (::engine.map->canWalk(owner->x, owner->y + stepy))
          {
             owner->y += stepy;
-            return true;
+            return;
          }
       } else {
          if (::engine.map->canWalk(owner->x, owner->y + stepy)) {
             owner->y += stepy;
-            return true;
+            return;
          } else if (::engine.map->canWalk(owner->x + stepx, owner->y))
          {
             owner->x += stepx;
-            return true;
+            return;
          }
       }  
    } else if (owner->attacker &&
               (owner->x + dx) == (::engine).player->x &&
               (owner->y + dy) == (::engine).player->y)
       owner->attacker->attack(owner, ::engine.player);
-   return false;
+}
+
+ConfusedMonsterAi::ConfusedMonsterAi(int nbTurns, Ai *oldAi)
+   : nbTurns(nbTurns), oldAi(oldAi) {}
+
+bool ConfusedMonsterAi::update(Actor *owner) {
+   auto rng = TCODRandom::getInstance();
+   auto dx = rng->getInt(-1, 1);
+   auto dy = rng->getInt(-1, 1);
+   if (dx != 0 || dy != 0) {
+      auto destx = owner->x + dx;
+      auto desty = owner->y + dy;
+      if (::engine.map->canWalk(destx, desty)) {
+         owner->x = destx;
+         owner->y = desty;
+      } else {
+         auto actor = ::engine.getActor(destx, desty);
+         if (actor) owner->attacker->attack(owner, actor);
+      }
+   }
+   nbTurns--;
+   if (nbTurns == 0) {
+      owner->ai = oldAi;
+      owner->col &= ~A_REVERSE;
+      delete this;
+   }
+   return true;
 }

@@ -25,9 +25,9 @@ Gui::~Gui() {
 
 void Gui::render() {
    this->renderMouseLook();
-   for (auto y = this->msg.size(); !this->msg.empty(); y--) {
-      auto &msg = this->msg.back();
-      this->msg.pop_back();
+   for (auto y = this->msg.size(); y >= 1; y--) {
+      auto &msg = this->msg[y - 1];
+      if (::engine.gameStatus != Engine::DEFEAT) this->msg.pop_back();
       if (UINT_MAX != msg.col) attron(msg.col);
       mvprintw(
          y,
@@ -67,6 +67,7 @@ void Gui::renderBar(
 void Gui::renderMouseLook() {
    if (!(::engine).map->isInFov(::engine.mouse.cx, ::engine.mouse.cy))
       return;
+   if (-1 != ::engine.pick.maxSqRange) return;
    int x = 0;
    attron(A_DIM);
    for (auto actor : ::engine.actors)

@@ -2,6 +2,7 @@
 #include <Engine.hpp>
 #include <assert.h>
 #include <curses.h>
+#include <float.h>
 #include <locale.h>
 #include <main.hpp>
 #include <map.hpp>
@@ -68,7 +69,8 @@ Engine::~Engine() {
 }
 
 bool Engine::update() {
-   this->gameStatus = Engine::IDLE;
+   if (this->gameStatus != Engine::DEFEAT)
+      this->gameStatus = Engine::IDLE;
    if (!this->player->update()) return false;
    if (this->gameStatus == Engine::NEW_TURN)
       for (auto actor : this->actors)
@@ -131,4 +133,58 @@ void Engine::assertBlockingOrder(const char *fnName) {
       }
       blocks = actor->blocks;
    }
+}
+
+Actor *Engine::getClosestMonster(int x, int y, float range) const {
+   auto sqRange = (range == FLT_MAX)?
+      range
+   :
+      ((long long) (range * range));
+   Actor *closest = NULL;
+   long long bestSqDist = LLONG_MAX;
+   for (auto actor : this->actors)
+      if (actor != player &&
+          actor->destructible &&
+          !actor->destructible->isDead())
+      {
+         auto sqDist = actor->squaredDistance(x, y);
+         if (sqDist < bestSqDist && sqDist <= sqRange)
+         {
+            bestSqDist = sqDist;
+            closest = actor;
+         }
+      }
+   return closest;
+}
+
+bool Engine::pickATile(
+   unsigned col,
+   float maxRange)
+{
+   this->pick = {
+      .maxSqRange = (long long) ((maxRange == FLT_MAX) ?
+         LLONG_MAX
+      :
+         roundf(maxRange * maxRange)),
+      .col = col };
+   defer( this->pick.maxSqRange = -1 );   
+   this->render();
+   ok(refresh());
+   auto ch = getch();
+   defer( this->lastKey = ch );
+   if (ch != KEY_MOUSE) return false;
+   MEVENT event;
+   if (OK != getmouse(&event)) return true;
+   this->mouse = { .cx = event.x, .cy = event.y };
+   return true;
+}
+
+Actor *Engine::getActor(int x, int y) const {
+   for (auto actor : this->actors)
+      if (x == actor->x &&
+          y == actor->y &&
+          actor->destructible &&
+          !actor->destructible->isDead()
+       ) return actor;
+   return NULL;
 }

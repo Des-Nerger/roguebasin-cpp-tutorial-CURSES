@@ -3,6 +3,7 @@
 #undef hline
 #undef vline
 #include <main.hpp>
+#include <math.h>
 
 Actor::Actor(int x, int y, int ch, const char *name, int col) :
    x(x),
@@ -36,4 +37,10 @@ void Actor::render() const {
    attron(this->col);
    mvaddch(this->y, this->x, this->ch);
    attroff(this->col);
+}
+
+long long Actor::squaredDistance(int cx, int cy) const {
+   auto dx = cx - this->x;
+   auto dy = cy - this->y;
+   return dx * dx + dy * dy;
 }

@@ -22,8 +22,8 @@ struct Gui {
    struct Msg {
       unsigned col = UINT_MAX; // color pair attr
       const char *fmt = NULL; // format string
-      const char *ownName = NULL;
-      const char *targName = NULL;
+      const char *ownName = "";
+      const char *targName = "";
       float floatArg = NAN;
    };
    std::vector<Gui::Msg> msg; // current messages
